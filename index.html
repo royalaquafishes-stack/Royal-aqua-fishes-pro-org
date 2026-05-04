@@ -220,7 +220,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <!-- Inventory Management -->
                     <div class="glass-card p-8">
                         <h3 class="text-xl font-bold mb-6 flex items-center gap-2 text-green-400">
                             <i class="fa-solid fa-plus-circle"></i> Add New Specimen
@@ -246,7 +245,6 @@
                         </form>
                     </div>
 
-                    <!-- App Settings -->
                     <div class="glass-card p-8">
                         <h3 class="text-xl font-bold mb-6 flex items-center gap-2 text-yellow-400">
                             <i class="fa-solid fa-gears"></i> Store Identity
@@ -264,7 +262,7 @@
                     </div>
                 </div>
 
-                <!-- NEW: Inventory Management -->
+                <!-- Inventory Management -->
                 <div class="mt-12 glass-card p-8">
                     <h3 class="text-xl font-bold mb-6 flex items-center gap-2 text-blue-400">
                         <i class="fa-solid fa-warehouse"></i> Inventory Manager
@@ -274,7 +272,6 @@
                     </div>
                 </div>
 
-                <!-- Admin Orders View -->
                 <div class="mt-12 glass-card p-8">
                     <h3 class="text-xl font-bold mb-6 flex items-center gap-2 text-yellow-400">
                         <i class="fa-solid fa-truck-fast"></i> Real-time Order Manager
@@ -286,7 +283,6 @@
             </section>
         </main>
 
-        <!-- Footer -->
         <footer class="bg-[#001122] border-t border-white/5 pt-16 pb-8 px-6">
             <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                 <div class="col-span-1 md:col-span-1">
@@ -347,7 +343,6 @@
         </div>
     </div>
 
-    <!-- Edit Product Modal -->
     <div id="edit-product-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden p-4">
         <div class="bg-[#001f3f] w-full max-w-lg rounded-[30px] p-8 border border-yellow-400/30">
             <h3 class="text-2xl font-serif mb-6 text-yellow-400">Edit Specimen</h3>
@@ -390,11 +385,21 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, collection, doc, setDoc, addDoc, getDoc, onSnapshot, query, updateDoc, deleteDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // FIXED: Using your actual project credentials
+        const firebaseConfig = {
+          apiKey: "AIzaSyDhZg64IHmkgWdeXK0XdFAnx5ySu74GvlM",
+          authDomain: "royal-aqua-fishes.firebaseapp.com",
+          projectId: "royal-aqua-fishes",
+          storageBucket: "royal-aqua-fishes.firebasestorage.app",
+          messagingSenderId: "426076229026",
+          appId: "1:426076229026:web:f50015738d97d3a9cd36fb",
+          measurementId: "G-2CJ3GPRV4Z"
+        };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'royal-aqua-pro-v1';
+        const appId = 'royal-aqua-fishes'; // Matches your project ID
 
         // --- GLOBAL STATE ---
         let user = null;
@@ -430,11 +435,8 @@
         // --- AUTHENTICATION ---
         const initAuth = async () => {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // Simplified Auth for Live Environment
+                await signInAnonymously(auth);
             } catch (err) {
                 console.error("Auth failed:", err);
             }
@@ -482,13 +484,6 @@
             if(siteSettings.logo) {
                 $('header-logo').src = siteSettings.logo;
                 $('current-logo-preview').src = siteSettings.logo;
-                let link = document.querySelector("link[rel~='icon']");
-                if (!link) {
-                    link = document.createElement('link');
-                    link.rel = 'icon';
-                    document.getElementsByTagName('head')[0].appendChild(link);
-                }
-                link.href = siteSettings.logo;
             }
         };
 
@@ -521,7 +516,6 @@
             shopContainer.innerHTML = html;
         };
 
-        // NEW: Inventory Management Renderer
         const renderInventory = () => {
             const container = $('admin-inventory-list');
             container.innerHTML = products.map(p => `
@@ -603,72 +597,38 @@
 
         $('checkout-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!user) return;
             const { subtotal, fee, total } = updateCartTotal();
             const orderId = 'RA' + Math.random().toString(36).substr(2, 5).toUpperCase();
             const orderData = {
-                orderId,
-                items: cart,
-                total,
-                packingFee: fee,
+                orderId, items: cart, total, packingFee: fee,
                 customer: {
-                    name: $('c-name').value,
-                    phone: $('c-phone').value,
-                    city: $('c-city').value,
-                    state: $('c-state').value,
-                    pin: $('c-pin').value,
-                    address: $('c-address').value
+                    name: $('c-name').value, phone: $('c-phone').value,
+                    city: $('c-city').value, state: $('c-state').value,
+                    pin: $('c-pin').value, address: $('c-address').value
                 },
-                status: 'Pending',
-                timestamp: Timestamp.now(),
-                userId: user.uid
+                status: 'Pending', timestamp: Timestamp.now(), userId: user.uid
             };
             try {
                 const orderRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
                 await addDoc(orderRef, orderData);
                 const dateStr = new Date().toLocaleString();
                 const itemsList = cart.map(item => `• *${item.name}* (x${item.qty}) - ₹${item.price * item.qty}`).join('\n');
-                const waMessage = `📦 *NEW ORDER - ROYAL AQUA*
-━━━━━━━━━━━━━━━━━━
-🆔 *Order ID:* ${orderId}
-📅 *Date:* ${dateStr}
-
-👤 *Customer Details:*
-• *Name:* ${orderData.customer.name}
-• *Phone:* ${orderData.customer.phone}
-• *City/Vill:* ${orderData.customer.city}
-• *State:* ${orderData.customer.state}
-• *Pin Code:* ${orderData.customer.pin}
-• *Address:* ${orderData.customer.address}
-
-🐠 *Items Ordered:*
-${itemsList}
-${fee > 0 ? `• *Packing/Courier Fee:* ₹${fee}\n` : ''}
-💰 *TOTAL AMOUNT: ₹${total}*
-━━━━━━━━━━━━━━━━━━
-_Please confirm my order. Thank you!_`;
-                const waUrl = `https://wa.me/919051098057?text=${encodeURIComponent(waMessage)}`;
-                cart = [];
-                updateCartUI();
-                closeModal('checkout-modal');
-                navigate('history');
-                window.open(waUrl, '_blank');
+                const waMessage = `📦 *NEW ORDER - ROYAL AQUA*\n━━━━━━━━━━━━━━━━━━\n🆔 *Order ID:* ${orderId}\n📅 *Date:* ${dateStr}\n\n👤 *Customer Details:*\n• *Name:* ${orderData.customer.name}\n• *Phone:* ${orderData.customer.phone}\n• *Address:* ${orderData.customer.address}\n\n🐠 *Items:*\n${itemsList}\n💰 *TOTAL: ₹${total}*\n━━━━━━━━━━━━━━━━━━`;
+                window.open(`https://wa.me/919051098057?text=${encodeURIComponent(waMessage)}`, '_blank');
+                cart = []; updateCartUI(); closeModal('checkout-modal'); navigate('history');
             } catch (err) { console.error("Order failed:", err); }
         });
 
         const renderOrders = () => {
             const myOrders = orders.filter(o => o.userId === user.uid);
             const historyContainer = $('orders-list');
-            if (myOrders.length === 0) {
-                historyContainer.innerHTML = `<p class="text-slate-500 italic">No orders found.</p>`;
-            } else {
+            if (myOrders.length > 0) {
                 historyContainer.innerHTML = myOrders.map(o => `
                     <div class="glass-card p-6 border-l-4 ${o.status === 'Completed' ? 'border-green-500' : 'border-yellow-400'}">
                         <div class="flex justify-between mb-2">
                             <span class="font-bold text-yellow-400">${o.orderId}</span>
                             <span class="text-xs px-3 py-1 rounded-full bg-white/5">${o.status}</span>
                         </div>
-                        <p class="text-sm text-slate-400 mb-4">${o.timestamp.toDate().toLocaleDateString()}</p>
                         <p class="font-bold">Total: ₹${o.total}</p>
                     </div>
                 `).join('');
@@ -679,19 +639,13 @@ _Please confirm my order. Thank you!_`;
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <h4 class="font-bold text-lg">${o.customer.name}</h4>
-                            <p class="text-sm text-slate-400">${o.customer.phone} | ${o.customer.city}</p>
+                            <p class="text-sm text-slate-400">${o.customer.phone}</p>
                         </div>
-                        <div class="text-right">
-                            <span class="text-yellow-400 font-bold">${o.orderId}</span>
-                            <p class="text-xs">₹${o.total}</p>
-                        </div>
-                    </div>
-                    <div class="bg-black/20 p-4 rounded-xl mb-4 text-xs">
-                        ${o.items.map(i => `${i.name} x${i.qty}`).join(', ')}
+                        <span class="text-yellow-400 font-bold">${o.orderId}</span>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="updateOrderStatus('${o.id}', 'Confirmed')" class="px-4 py-2 bg-blue-600 rounded-lg text-xs">Confirm</button>
-                        <button onclick="updateOrderStatus('${o.id}', 'Completed')" class="px-4 py-2 bg-green-600 rounded-lg text-xs">Mark Done</button>
+                        <button onclick="updateOrderStatus('${o.id}', 'Completed')" class="px-4 py-2 bg-green-600 rounded-lg text-xs">Done</button>
                         <button onclick="deleteOrder('${o.id}')" class="px-4 py-2 bg-red-600/30 text-red-400 rounded-lg text-xs">Delete</button>
                     </div>
                 </div>
@@ -705,24 +659,19 @@ _Please confirm my order. Thank you!_`;
         };
 
         window.updateOrderStatus = async (id, status) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', id);
-            await updateDoc(docRef, { status });
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id), { status });
         };
 
         window.deleteOrder = async (id) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', id);
-            await deleteDoc(docRef);
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id));
         };
 
-        // NEW: Inventory Actions
         window.deleteProduct = async (id) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-            await deleteDoc(docRef);
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id));
         };
 
         window.toggleProductAvailability = async (id, currentStatus) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-            await updateDoc(docRef, { isAvailable: !currentStatus });
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id), { isAvailable: !currentStatus });
         };
 
         window.openEditProductModal = (id) => {
@@ -737,12 +686,8 @@ _Please confirm my order. Thank you!_`;
 
         $('edit-product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = $('edit-p-id').value;
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'products', id);
-            await updateDoc(docRef, {
-                name: $('edit-p-name').value,
-                price: parseFloat($('edit-p-price').value),
-                description: $('edit-p-desc').value
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', $('edit-p-id').value), {
+                name: $('edit-p-name').value, price: parseFloat($('edit-p-price').value), description: $('edit-p-desc').value
             });
             closeModal('edit-product-modal');
         });
@@ -754,19 +699,12 @@ _Please confirm my order. Thank you!_`;
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async () => {
-                const prodData = {
-                    name: $('p-name').value,
-                    price: parseFloat($('p-price').value),
-                    description: $('p-desc').value,
-                    image: reader.result,
-                    isAvailable: true, // Default to available
-                    timestamp: Timestamp.now()
-                };
-                try {
-                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-                    await addDoc(colRef, prodData);
-                    $('add-product-form').reset();
-                } catch (err) { console.error("Add prod err:", err); }
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'products'), {
+                    name: $('p-name').value, price: parseFloat($('p-price').value),
+                    description: $('p-desc').value, image: reader.result,
+                    isAvailable: true, timestamp: Timestamp.now()
+                });
+                $('add-product-form').reset();
             };
         });
 
@@ -776,8 +714,7 @@ _Please confirm my order. Thank you!_`;
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async () => {
-                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general');
-                await setDoc(settingsRef, { logo: reader.result }, { merge: true });
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general'), { logo: reader.result }, { merge: true });
             };
         };
 
